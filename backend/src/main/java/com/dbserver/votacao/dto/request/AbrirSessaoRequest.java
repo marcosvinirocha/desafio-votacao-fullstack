@@ -12,9 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AbrirSessaoRequest {
 
-    @NotNull(message = "O ID da pauta é obrigatório.")
+    @NotNull(message = "O ID da pauta é obrigatório")
     private Long pautaId;
 
-    // Se nulo ou menor/igual a zero, a aplicação assume 1 minuto por padrão
-    private Long duracaoMinutos;
+    private Integer duracaoMinutos;
 }
