@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: desafio-votacao
+  datasource:
+    # Salva os dados em arquivo local na pasta ./data/votacao
+    url: jdbc:h2:file:./data/votacao;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
