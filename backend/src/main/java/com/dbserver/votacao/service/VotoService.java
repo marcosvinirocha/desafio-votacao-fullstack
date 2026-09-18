@@ -10,9 +10,12 @@ import com.dbserver.votacao.model.Voto;
 import com.dbserver.votacao.model.enums.OpcaoVoto;
 import com.dbserver.votacao.repository.VotoRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j 
 @Service
 @RequiredArgsConstructor
 public class VotoService {
@@ -23,14 +26,19 @@ public class VotoService {
 
     @Transactional
     public VotoResponse registrarVoto(VotoRequest request) {
+        log.info("Tentativa de registro de voto. Associado: '{}', Pauta ID: {}, Opcao: '{}'",
+                request.getAssociadoId(), request.getPautaId(), request.getVoto());
         Pauta pauta = pautaService.buscarPorId(request.getPautaId());
         SessaoVotacao sessao = sessaoVotacaoService.buscarPorPautaId(pauta.getId());
 
         if (!sessao.isAberta()) {
+            log.warn("Voto recusado: A sessao da pauta ID {} esta encerrada. Horario atual: {}",
+                    pauta.getId(), java.time.LocalDateTime.now());
             throw new BusinessException("A sessão de votação para esta pauta está encerrada ou ainda não iniciou.");
         }
 
         if (votoRepository.existsByPautaIdAndAssociadoId(pauta.getId(), request.getAssociadoId())) {
+            log.warn("Voto recusado: Associado '{}' ja votou na pauta ID {}", request.getAssociadoId(), pauta.getId());
             throw new BusinessException("O associado já votou nesta pauta.");
         }
 
@@ -41,6 +49,8 @@ public class VotoService {
                 .build();
 
         Voto votoSalvo = votoRepository.save(voto);
+        log.info("Voto ID {} registrado com sucesso. Associado: '{}', Pauta ID: {}",
+                votoSalvo.getId(), votoSalvo.getAssociadoId(), pauta.getId());
 
         return VotoResponse.builder()
                 .id(votoSalvo.getId())
@@ -53,6 +63,7 @@ public class VotoService {
 
     @Transactional(readOnly = true)
     public ResultadoVotacaoResponse obterResultado(Long pautaId) {
+        log.info("Iniciando apuracao do resultado da pauta ID: {}", pautaId);
         Pauta pauta = pautaService.buscarPorId(pautaId);
         SessaoVotacao sessao = sessaoVotacaoService.buscarPorPautaId(pautaId);
 
@@ -72,6 +83,9 @@ public class VotoService {
         } else {
             resultado = "EMPATE";
         }
+
+        log.info("Apuracao da pauta ID {}: Total Votos={}, SIM={}, NAO={}, Status='{}', Encerrada={}",
+                pautaId, totalVotos, votosSim, votosNao, resultado, encerrada);
 
         return ResultadoVotacaoResponse.builder()
                 .pautaId(pauta.getId())

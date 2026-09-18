@@ -1,0 +1,115 @@
+### Configuração de Variáveis Globais
+@baseUrl = http://localhost:8080/v1
+@contentType = application/json
+
+###############################################################################
+# 1. PAUTAS
+###############################################################################
+
+### 1.1 Criar uma Nova Pauta
+# @name criarPauta
+POST {{baseUrl}}/pautas
+Content-Type: {{contentType}}
+
+{
+  "titulo": "Aprovação do Orçamento Anual 2027",
+  "descricao": "Votação para deliberar sobre a aprovação dos custos operacionais e investimentos da cooperativa."
+}
+
+### Variável dinâmica capturando o ID da pauta criada acima
+@pautaId = {{criarPauta.response.body.id}}
+
+
+### 1.2 Listar Todas as Pautas
+GET {{baseUrl}}/pautas
+Content-Type: {{contentType}}
+
+
+### 1.3 Consultar Resultado da Votação de uma Pauta
+GET {{baseUrl}}/pautas/{{pautaId}}/resultado
+Content-Type: {{contentType}}
+
+
+###############################################################################
+# 2. SESSÕES DE VOTAÇÃO
+###############################################################################
+
+### 2.1 Abrir Sessão de Votação (Com tempo customizado - Ex: 3 minutos)
+POST {{baseUrl}}/sessoes/abrir
+Content-Type: {{contentType}}
+
+{
+  "pautaId": {{pautaId}},
+  "duracaoMinutos": 3
+}
+
+### 2.2 Abrir Sessão de Votação (Com tempo default - 1 minuto)
+# Nota: Funciona apenas para pautas que ainda não possuem sessão aberta
+POST {{baseUrl}}/sessoes/abrir
+Content-Type: {{contentType}}
+
+{
+  "pautaId": {{pautaId}}
+}
+
+
+###############################################################################
+# 3. VOTOS
+###############################################################################
+
+### 3.1 Registrar Voto 'SIM' (Associado 1)
+POST {{baseUrl}}/votos
+Content-Type: {{contentType}}
+
+{
+  "pautaId": {{pautaId}},
+  "associadoId": "12345678901",
+  "voto": "SIM"
+}
+
+### 3.2 Registrar Voto 'NAO' (Associado 2)
+POST {{baseUrl}}/votos
+Content-Type: {{contentType}}
+
+{
+  "pautaId": {{pautaId}},
+  "associadoId": "98765432100",
+  "voto": "NAO"
+}
+
+### 3.3 Registrar Voto 'SIM' (Associado 3)
+POST {{baseUrl}}/votos
+Content-Type: {{contentType}}
+
+{
+  "pautaId": {{pautaId}},
+  "associadoId": "11122233344",
+  "voto": "SIM"
+}
+
+
+###############################################################################
+# 4. CENÁRIOS DE ERRO E VALIDAÇÃO
+###############################################################################
+
+### 4.1 Tentativa de Voto Duplicado pelo Mesmo Associado (Deve retornar HTTP 400 ou 409)
+POST {{baseUrl}}/votos
+Content-Type: {{contentType}}
+
+{
+  "pautaId": {{pautaId}},
+  "associadoId": "12345678901",
+  "voto": "NAO"
+}
+
+### 4.2 Enviar Voto sem Campos Obrigatórios (Deve retornar HTTP 400 com mapa de erros)
+POST {{baseUrl}}/votos
+Content-Type: {{contentType}}
+
+{
+  "pautaId": {{pautaId}}
+}
+
+### 4.3 Consultar Pauta Inexistente (Deve retornar HTTP 404)
+GET {{baseUrl}}/pautas/999999/resultado
+Content-Type: {{contentType}}
