@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens globais (Tailwind CSS v4 — CSS-first).
+ * Adicione aqui fontes, cores, espaçamentos e demais tokens do design system.
+ */
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply min-h-screen bg-white font-sans text-neutral-900;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+}
