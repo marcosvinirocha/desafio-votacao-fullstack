@@ -1,6 +1,8 @@
 package com.dbserver.votacao.service;
 
+import com.dbserver.votacao.client.CpfValidationClient;
 import com.dbserver.votacao.dto.request.VotoRequest;
+import com.dbserver.votacao.dto.response.CpfStatusResponse;
 import com.dbserver.votacao.dto.response.ResultadoVotacaoResponse;
 import com.dbserver.votacao.dto.response.VotoResponse;
 import com.dbserver.votacao.exception.BusinessException;
@@ -8,6 +10,7 @@ import com.dbserver.votacao.model.Pauta;
 import com.dbserver.votacao.model.SessaoVotacao;
 import com.dbserver.votacao.model.Voto;
 import com.dbserver.votacao.model.enums.OpcaoVoto;
+import com.dbserver.votacao.model.enums.StatusVoto;
 import com.dbserver.votacao.repository.VotoRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,6 +23,7 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,11 +38,14 @@ class VotoServiceTest {
     @Mock
     private SessaoVotacaoService sessaoVotacaoService;
 
+    @Mock
+    private CpfValidationClient cpfValidationClient; // <-- Mock do cliente de CPF adicionado
+
     @InjectMocks
     private VotoService votoService;
 
     @Test
-    @DisplayName("Deve registrar voto com sucesso quando a sessao estiver aberta e associado nao votou")
+    @DisplayName("Deve registrar voto com sucesso quando CPF estiver ABLE_TO_VOTE, sessao aberta e associado nao votou")
     void registrarVoto_ComSucesso() {
         Pauta pauta = Pauta.builder().id(1L).build();
         SessaoVotacao sessao = SessaoVotacao.builder()
@@ -46,11 +53,15 @@ class VotoServiceTest {
                 .dataEncerramento(LocalDateTime.now().plusMinutes(5))
                 .build();
 
-        VotoRequest request = new VotoRequest(1L, "12345678901", OpcaoVoto.SIM);
+        VotoRequest request = new VotoRequest(1L, "12345678902", OpcaoVoto.SIM);
+
+        // Configura o retorno do mock do CPF para ABLE_TO_VOTE
+        when(cpfValidationClient.validarCpf("12345678902"))
+                .thenReturn(new CpfStatusResponse(StatusVoto.ABLE_TO_VOTE));
 
         when(pautaService.buscarPorId(1L)).thenReturn(pauta);
         when(sessaoVotacaoService.buscarPorPautaId(1L)).thenReturn(sessao);
-        when(votoRepository.existsByPautaIdAndAssociadoId(1L, "12345678901")).thenReturn(false);
+        when(votoRepository.existsByPautaIdAndAssociadoId(1L, "12345678902")).thenReturn(false);
         when(votoRepository.save(any(Voto.class))).thenAnswer(i -> {
             Voto v = i.getArgument(0);
             v.setId(100L);
@@ -62,9 +73,25 @@ class VotoServiceTest {
 
         assertNotNull(response);
         assertEquals(100L, response.getId());
-        assertEquals("12345678901", response.getAssociadoId());
+        assertEquals("12345678902", response.getAssociadoId());
         assertEquals(OpcaoVoto.SIM, response.getVoto());
         verify(votoRepository, times(1)).save(any(Voto.class));
+    }
+
+    @Test
+    @DisplayName("Deve lancar BusinessException quando o CPF retornar UNABLE_TO_VOTE")
+    void registrarVoto_CpfIncapazDeVotar_DeveLancarExcecao() {
+        VotoRequest request = new VotoRequest(1L, "12345678901", OpcaoVoto.SIM);
+
+        // Configura o retorno do mock do CPF para UNABLE_TO_VOTE
+        when(cpfValidationClient.validarCpf("12345678901"))
+                .thenReturn(new CpfStatusResponse(StatusVoto.UNABLE_TO_VOTE));
+
+        assertThrows(BusinessException.class, () -> votoService.registrarVoto(request));
+
+        // Garante que nem tentou buscar pauta ou salvar voto
+        verify(votoRepository, never()).save(any());
+        verify(pautaService, never()).buscarPorId(anyLong());
     }
 
     @Test
@@ -76,8 +103,10 @@ class VotoServiceTest {
                 .dataEncerramento(LocalDateTime.now().minusMinutes(1))
                 .build();
 
-        VotoRequest request = new VotoRequest(1L, "12345678901", OpcaoVoto.SIM);
+        VotoRequest request = new VotoRequest(1L, "12345678902", OpcaoVoto.SIM);
 
+        when(cpfValidationClient.validarCpf("12345678902"))
+                .thenReturn(new CpfStatusResponse(StatusVoto.ABLE_TO_VOTE));
         when(pautaService.buscarPorId(1L)).thenReturn(pauta);
         when(sessaoVotacaoService.buscarPorPautaId(1L)).thenReturn(sessao);
 
@@ -94,11 +123,13 @@ class VotoServiceTest {
                 .dataEncerramento(LocalDateTime.now().plusMinutes(5))
                 .build();
 
-        VotoRequest request = new VotoRequest(1L, "12345678901", OpcaoVoto.SIM);
+        VotoRequest request = new VotoRequest(1L, "12345678902", OpcaoVoto.SIM);
 
+        when(cpfValidationClient.validarCpf("12345678902"))
+                .thenReturn(new CpfStatusResponse(StatusVoto.ABLE_TO_VOTE));
         when(pautaService.buscarPorId(1L)).thenReturn(pauta);
         when(sessaoVotacaoService.buscarPorPautaId(1L)).thenReturn(sessao);
-        when(votoRepository.existsByPautaIdAndAssociadoId(1L, "12345678901")).thenReturn(true);
+        when(votoRepository.existsByPautaIdAndAssociadoId(1L, "12345678902")).thenReturn(true);
 
         assertThrows(BusinessException.class, () -> votoService.registrarVoto(request));
         verify(votoRepository, never()).save(any());

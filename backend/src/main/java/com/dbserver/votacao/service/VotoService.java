@@ -1,6 +1,8 @@
 package com.dbserver.votacao.service;
 
+import com.dbserver.votacao.client.CpfValidationClient;
 import com.dbserver.votacao.dto.request.VotoRequest;
+import com.dbserver.votacao.dto.response.CpfStatusResponse;
 import com.dbserver.votacao.dto.response.ResultadoVotacaoResponse;
 import com.dbserver.votacao.dto.response.VotoResponse;
 import com.dbserver.votacao.exception.BusinessException;
@@ -23,11 +25,19 @@ public class VotoService {
     private final VotoRepository votoRepository;
     private final PautaService pautaService;
     private final SessaoVotacaoService sessaoVotacaoService;
+    private final CpfValidationClient cpfValidationClient;
 
     @Transactional
     public VotoResponse registrarVoto(VotoRequest request) {
         log.info("Tentativa de registro de voto. Associado: '{}', Pauta ID: {}, Opcao: '{}'",
                 request.getAssociadoId(), request.getPautaId(), request.getVoto());
+
+        // 1. Validar CPF e permissão de voto no serviço externo/mock
+        CpfStatusResponse cpfStatus = cpfValidationClient.validarCpf(request.getAssociadoId());
+        
+        if (!cpfStatus.isAbleToVote()) {
+            throw new BusinessException("O associado informado não está habilitado para votar nesta pauta (UNABLE_TO_VOTE).");
+        }
         Pauta pauta = pautaService.buscarPorId(request.getPautaId());
         SessaoVotacao sessao = sessaoVotacaoService.buscarPorPautaId(pauta.getId());
 
