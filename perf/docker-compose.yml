@@ -1,0 +1,11 @@
+services:
+  k6-runner:
+    image: grafana/k6:latest
+    container_name: votacao-k6-runner
+    volumes:
+      - ./load-test.js:/app/load-test.js
+    command: run /app/load-test.js
+    environment:
+      - TARGET_HOSTNAME=host.docker.internal:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -31,4 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
-.db
+
+
+# Ignora todo o conteúdo do diretório data
+data/
+
+# Ignora arquivos de banco de dados específicos (ex: H2, SQLite, etc.)
+*.db
+*.mv.db
+*.trace.db
