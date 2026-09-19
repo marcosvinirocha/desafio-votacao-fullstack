@@ -3,7 +3,7 @@ spring:
     name: desafio-votacao
   datasource:
     # Salva os dados em arquivo local na pasta ./data/votacao
-    url: jdbc:h2:file:./data/votacao;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+    url: jdbc:h2:mem:testdb
     driverClassName: org.h2.Driver
     username: sa
     password:
