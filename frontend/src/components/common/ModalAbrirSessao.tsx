@@ -6,12 +6,14 @@ import type { FormEvent } from 'react';
 import { FeedbackMessage } from '@/components/ui/FeedbackMessage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { buttonPrimary, buttonSecondary, inputBase } from '@/components/ui/styles';
+import { useSessaoStore } from '@/stores/useSessaoStore';
 import type { AbrirSessaoPayload, Pauta } from '@/types/domain';
 import { cn } from '@/utils/cn';
 
 interface SessaoFormProps {
   pauta: Pauta;
-  onSubmit: (payload: AbrirSessaoPayload) => void | Promise<void>;
+  onSubmit?: (payload: AbrirSessaoPayload) => void | Promise<void>;
+  onSuccess: () => void;
   loading: boolean;
   error: string | null;
 }
@@ -20,9 +22,10 @@ interface SessaoFormProps {
  * Formulário interno do modal. Vive dentro do Dialog.Content, que é desmontado
  * ao fechar (Presence) — o estado reseta automaticamente a cada abertura.
  */
-function SessaoForm({ pauta, onSubmit, loading, error }: SessaoFormProps) {
+function SessaoForm({ pauta, onSubmit, onSuccess, loading, error }: SessaoFormProps) {
   const [duracaoMinutos, setDuracaoMinutos] = useState('1');
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const { abrirSessao, clearError } = useSessaoStore();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,7 +37,21 @@ function SessaoForm({ pauta, onSubmit, loading, error }: SessaoFormProps) {
     }
 
     setFieldError(null);
-    await onSubmit({ pautaId: pauta.id, duracaoMinutos: duracao });
+    clearError();
+
+    try {
+      const payload: AbrirSessaoPayload = { pautaId: pauta.id, duracaoMinutos: duracao };
+
+      if (onSubmit) {
+        await onSubmit(payload);
+      } else {
+        await abrirSessao(payload);
+      }
+
+      onSuccess();
+    } catch {
+      // O erro da API fica retido na store (state.error) ou e capturado pelo onSubmit do pai
+    }
   }
 
   return (
@@ -81,7 +98,7 @@ function SessaoForm({ pauta, onSubmit, loading, error }: SessaoFormProps) {
 
       <div className="flex justify-end gap-3">
         <Dialog.Close asChild>
-          <button type="button" className={buttonSecondary}>
+          <button type="button" disabled={loading} className={buttonSecondary}>
             Cancelar
           </button>
         </Dialog.Close>
@@ -104,7 +121,7 @@ interface ModalAbrirSessaoProps {
   /** Pauta selecionada; `null` mantém o modal fechado. */
   pauta: Pauta | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: AbrirSessaoPayload) => void | Promise<void>;
+  onSubmit?: (payload: AbrirSessaoPayload) => void | Promise<void>;
   loading?: boolean;
   error?: string | null;
 }
@@ -114,10 +131,15 @@ export function ModalAbrirSessao({
   pauta,
   onOpenChange,
   onSubmit,
-  loading = false,
-  error = null,
+  loading: externalLoading,
+  error: externalError,
 }: ModalAbrirSessaoProps) {
   const open = pauta !== null;
+  const storeLoading = useSessaoStore((state) => state.loading);
+  const storeError = useSessaoStore((state) => state.error);
+
+  const loading = externalLoading ?? storeLoading;
+  const error = externalError ?? storeError;
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -145,7 +167,13 @@ export function ModalAbrirSessao({
           </div>
 
           {pauta && (
-            <SessaoForm pauta={pauta} onSubmit={onSubmit} loading={loading} error={error} />
+            <SessaoForm
+              pauta={pauta}
+              onSubmit={onSubmit}
+              onSuccess={() => onOpenChange(false)}
+              loading={loading}
+              error={error}
+            />
           )}
         </Dialog.Content>
       </Dialog.Portal>

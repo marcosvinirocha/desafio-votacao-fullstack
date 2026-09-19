@@ -1,21 +1,42 @@
+import { useMemo } from 'react';
 import { CalendarDays, Clock3 } from 'lucide-react';
 
 import { BadgeStatus } from '@/components/ui/BadgeStatus';
 import { buttonPrimary } from '@/components/ui/styles';
+import { useSessaoStore } from '@/stores/useSessaoStore';
 import type { Pauta, PautaStatus } from '@/types/domain';
 import { cn } from '@/utils/cn';
 import { formatDate } from '@/utils/format';
 
 interface PautaCardProps {
   pauta: Pauta;
-  status: PautaStatus;
+  status?: PautaStatus;
   onAbrirSessao: (pauta: Pauta) => void;
   className?: string;
 }
 
 /** Card individual de pauta com status da sessão e ação de abertura. */
-export function PautaCard({ pauta, status, onAbrirSessao, className }: PautaCardProps) {
-  const hasSessao = status !== 'semSessao';
+export function PautaCard({ pauta, status: statusProp, onAbrirSessao, className }: PautaCardProps) {
+  // Seletor cirúrgico: re-renderiza apenas se a sessão desta pauta mudar
+  const sessao = useSessaoStore((state) => state.sessoes.find((s) => s.pautaId === pauta.id));
+
+  // Deriva o status memorizado baseado nas dependências da sessão
+  const currentStatus = useMemo<PautaStatus>(() => {
+    if (statusProp) return statusProp;
+    if (!sessao) return 'semSessao';
+
+    const inicio = new Date(sessao.dataAbertura).getTime();
+    const fim = new Date(sessao.dataEncerramento).getTime();
+    const agora = new Date().getTime(); // Avaliado com segurança dentro da inicialização do useMemo
+
+    if (agora >= inicio && agora <= fim && sessao.aberta) {
+      return 'emAndamento';
+    }
+
+    return 'encerrada';
+  }, [statusProp, sessao]);
+
+  const hasSessao = currentStatus !== 'semSessao';
 
   return (
     <article
@@ -26,7 +47,7 @@ export function PautaCard({ pauta, status, onAbrirSessao, className }: PautaCard
     >
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-base font-semibold text-neutral-900">{pauta.titulo}</h3>
-        <BadgeStatus status={status} />
+        <BadgeStatus status={currentStatus} />
       </div>
 
       {pauta.descricao && <p className="text-sm text-neutral-600">{pauta.descricao}</p>}

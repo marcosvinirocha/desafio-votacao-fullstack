@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j 
 @Service
@@ -63,6 +65,15 @@ public class SessaoVotacaoService {
                     log.warn("Sessao de votacao nao encontrada para a pauta ID: {}", pautaId);
                     return new ResourceNotFoundException("Sessão de votação não encontrada para a pauta ID: " + pautaId);
                 });
+    }
+
+    @Transactional(readOnly = true)
+    public List<SessaoVotacaoResponse> findAll() {
+        log.debug("Buscando todas as sessões");
+        return sessaoVotacaoRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
     private SessaoVotacaoResponse toResponse(SessaoVotacao sessao) {

@@ -14,10 +14,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class SessaoVotacaoServiceTest {
@@ -30,6 +33,8 @@ class SessaoVotacaoServiceTest {
 
     @InjectMocks
     private SessaoVotacaoService sessaoVotacaoService;
+
+
 
     @Test
     @DisplayName("Deve abrir sessao com tempo customizado quando informado")
@@ -71,6 +76,35 @@ class SessaoVotacaoServiceTest {
 
         assertNotNull(response);
         verify(sessaoVotacaoRepository, times(1)).save(any(SessaoVotacao.class));
+    }
+
+
+    @Test
+    @DisplayName("Deve retornar lista de DTOs com todas as sessoes cadastradas")
+    void deveRetornarListaDeSessoes() {
+        // Arrange
+        Pauta pauta = Pauta.builder().id(1L).titulo("Pauta de Teste").build();
+        SessaoVotacao sessao = SessaoVotacao.builder()
+                .id(10L)
+                .pauta(pauta)
+                .dataAbertura(LocalDateTime.now())
+                .dataEncerramento(LocalDateTime.now().plusMinutes(1))
+                .build();
+
+        given(sessaoVotacaoRepository.findAll()).willReturn(List.of(sessao));
+
+        // Act
+        List<SessaoVotacaoResponse> resultado = sessaoVotacaoService.findAll();
+
+        // Assert
+        assertThat(resultado).hasSize(1);
+        SessaoVotacaoResponse dto = resultado.get(0);
+        assertThat(dto.getId()).isEqualTo(10L);
+        assertThat(dto.getPautaId()).isEqualTo(1L);
+        assertThat(dto.getTituloPauta()).isEqualTo("Pauta de Teste");
+        assertThat(dto.getDataAbertura()).isNotNull();
+
+        verify(sessaoVotacaoRepository).findAll();
     }
 
     @Test

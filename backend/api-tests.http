@@ -12,7 +12,7 @@ POST {{baseUrl}}/pautas
 Content-Type: {{contentType}}
 
 {
-  "titulo": "Aprovação do Orçamento Anual 2027",
+  "titulo": "Aprovação do Orçamento Anual 2026",
   "descricao": "Votação para deliberar sobre a aprovação dos custos operacionais e investimentos da cooperativa."
 }
 
@@ -113,3 +113,9 @@ Content-Type: {{contentType}}
 ### 4.3 Consultar Pauta Inexistente (Deve retornar HTTP 404)
 GET {{baseUrl}}/pautas/999999/resultado
 Content-Type: {{contentType}}
+
+### 5. Listar Todas as Sessões de Votação
+GET {{baseUrl}}/sessoes
+Accept: application/json
+
+###

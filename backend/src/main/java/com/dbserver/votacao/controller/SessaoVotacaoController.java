@@ -7,6 +7,9 @@ import com.dbserver.votacao.service.SessaoVotacaoService;
 //import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,5 +27,11 @@ public class SessaoVotacaoController {
     public ResponseEntity<SessaoVotacaoResponse> abrirSessao(@Valid @RequestBody AbrirSessaoRequest request) {
         SessaoVotacaoResponse response = sessaoVotacaoService.abrirSessao(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<SessaoVotacaoResponse>> findAll() {
+        List<SessaoVotacaoResponse> sessoes = sessaoVotacaoService.findAll();
+        return ResponseEntity.ok(sessoes);
     }
 }
