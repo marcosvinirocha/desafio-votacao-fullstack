@@ -1,149 +1,103 @@
-import React, { useState } from 'react';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { List, LayoutGrid, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
-import { cn } from '../../utils/cn';
+import type { LucideIcon } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 
-interface NavItemProps {
-  icon: React.ElementType;
+import { NAV_ITEMS } from '@/config/navigation';
+import { cn } from '@/utils/cn';
+
+interface SidebarLinkProps {
   label: string;
-  isActive?: boolean;
-  isCollapsed: boolean;
-  onClick: () => void;
+  to: string;
+  icon: LucideIcon;
+  collapsed: boolean;
 }
 
-const NavItem: React.FC<NavItemProps> = ({
-  icon: Icon,
-  label,
-  isActive,
-  isCollapsed,
-  onClick,
-}) => {
-  const buttonContent = (
-    <button
-      onClick={onClick}
-      className={cn(
-        'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
-        isActive
-          ? 'bg-indigo-600 text-white shadow-sm'
-          : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
-      )}
+function SidebarLink({ label, to, icon: Icon, collapsed }: SidebarLinkProps) {
+  const link = (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        cn(
+          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600',
+          collapsed && 'justify-center px-0',
+          isActive
+            ? 'bg-blue-600 text-white'
+            : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
+        )
+      }
     >
-      <Icon className="h-5 w-5 shrink-0" />
-      {!isCollapsed && <span className="truncate">{label}</span>}
-    </button>
+      <Icon size={20} aria-hidden="true" />
+      {!collapsed && <span>{label}</span>}
+    </NavLink>
   );
 
-  if (isCollapsed) {
-    return (
-      <Tooltip.Provider delayDuration={100}>
-        <Tooltip.Root>
-          <Tooltip.Trigger asChild>{buttonContent}</Tooltip.Trigger>
-          <Tooltip.Portal>
-            <Tooltip.Content
-              side="right"
-              sideOffset={12}
-              className="z-50 rounded-md bg-zinc-800 px-3 py-1.5 text-xs text-zinc-100 shadow-md animate-in fade-in-0 zoom-in-95"
-            >
-              {label}
-              <Tooltip.Arrow className="fill-zinc-800" />
-            </Tooltip.Content>
-          </Tooltip.Portal>
-        </Tooltip.Root>
-      </Tooltip.Provider>
-    );
+  // Estado retraído: exibe apenas o ícone com tooltip para o rótulo.
+  if (!collapsed) {
+    return link;
   }
 
-  return buttonContent;
-};
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>{link}</Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          side="right"
+          sideOffset={8}
+          className="z-50 rounded-md bg-neutral-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg"
+        >
+          {label}
+          <Tooltip.Arrow className="fill-neutral-900" />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
+}
 
-export const Sidebar: React.FC = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [activeList, setActiveList] = useState<'primeira' | 'segunda'>('primeira');
+/** Barra lateral retrátil de navegação principal. */
+export function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <Collapsible.Root
-      open={!isCollapsed}
-      onOpenChange={(open) => setIsCollapsed(!open)}
-      className={cn(
-        'relative flex h-screen flex-col justify-between border-r border-zinc-800 bg-zinc-950 p-4 transition-all duration-300 ease-in-out',
-        isCollapsed ? 'w-20' : 'w-64'
-      )}
-    >
-      {/* Header / Logo */}
-      <div className="space-y-6">
-        <div className="flex h-10 items-center justify-between px-2">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold">
-              <Layers className="h-5 w-5" />
-            </div>
-            {!isCollapsed && (
-              <span className="text-base font-semibold text-zinc-100 truncate">
-                Painel
-              </span>
-            )}
-          </div>
-
-          <Collapsible.Trigger asChild>
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
-              aria-label={isCollapsed ? 'Expandir Sidebar' : 'Recolher Sidebar'}
-            >
-              {isCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              ) }
-            </button>
-          </Collapsible.Trigger>
-        </div>
-
-        {/* Links de Navegação das Listagens */}
-        <nav className="space-y-1">
-          <div className="px-2 py-1">
-            {!isCollapsed && (
-              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                Listagens
-              </span>
-            )}
-          </div>
-
-          <NavItem
-            icon={List}
-            label="Primeira Listagem"
-            isActive={activeList === 'primeira'}
-            isCollapsed={isCollapsed}
-            onClick={() => setActiveList('primeira')}
-          />
-
-          <NavItem
-            icon={LayoutGrid}
-            label="Segunda Listagem"
-            isActive={activeList === 'segunda'}
-            isCollapsed={isCollapsed}
-            onClick={() => setActiveList('segunda')}
-          />
-        </nav>
-      </div>
-
-      {/* Footer / Perfil */}
-      <div className="border-t border-zinc-800 pt-4">
-        <div className="flex items-center gap-3 px-2">
-          <div className="h-8 w-8 rounded-full bg-zinc-800 flex shrink-0 items-center justify-center text-xs font-medium text-zinc-300">
-            US
-          </div>
-          {!isCollapsed && (
-            <div className="flex flex-col truncate">
-              <span className="text-sm font-medium text-zinc-200 truncate">
-                Usuário
-              </span>
-              <span className="text-xs text-zinc-500 truncate">
-                usuario@email.com
-              </span>
-            </div>
+    <Tooltip.Provider delayDuration={200} skipDelayDuration={300}>
+      <Collapsible.Root open={!collapsed} onOpenChange={(open) => setCollapsed(!open)} asChild>
+        <aside
+          aria-label="Navegação principal"
+          className={cn(
+            'sticky top-0 flex h-screen shrink-0 flex-col border-r border-neutral-200 bg-white',
+            'transition-[width] duration-200',
+            collapsed ? 'w-16' : 'w-64',
           )}
-        </div>
-      </div>
-    </Collapsible.Root>
+        >
+          <div className="flex h-16 shrink-0 items-center justify-between border-b border-neutral-200 px-4">
+            {!collapsed && (
+              <span className="text-sm font-semibold tracking-wide text-neutral-900">Votação</span>
+            )}
+            <Collapsible.Trigger asChild>
+              <button
+                type="button"
+                aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+                className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              >
+                {collapsed ? (
+                  <ChevronsRight size={20} aria-hidden="true" />
+                ) : (
+                  <ChevronsLeft size={20} aria-hidden="true" />
+                )}
+              </button>
+            </Collapsible.Trigger>
+          </div>
+
+          <nav aria-label="Páginas" className="flex-1 space-y-1 px-2 py-4">
+            {NAV_ITEMS.map((item) => (
+              <SidebarLink key={item.to} {...item} collapsed={collapsed} />
+            ))}
+          </nav>
+        </aside>
+      </Collapsible.Root>
+    </Tooltip.Provider>
   );
-};
+}

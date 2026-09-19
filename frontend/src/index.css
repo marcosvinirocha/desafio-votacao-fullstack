@@ -1,6 +1,5 @@
 @import 'tailwindcss';
-@import "@radix-ui/themes/styles.css";
-
+@import '@radix-ui/themes/styles.css';
 
 /*
  * Design tokens globais (Tailwind CSS v4 — CSS-first).

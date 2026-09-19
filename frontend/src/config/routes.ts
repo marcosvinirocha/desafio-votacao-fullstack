@@ -4,6 +4,9 @@
  */
 export const ROUTES = {
   home: '/',
+  gestaoPautas: '/pautas',
+  votacao: '/votacao',
+  resultados: '/resultados',
   notFound: '*',
 } as const;
 
